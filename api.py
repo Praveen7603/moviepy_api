@@ -1,10 +1,20 @@
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from moviepy import VideoFileClip, TextClip, CompositeVideoClip
 import uuid
 import os
 
 app = FastAPI()
+
+# 🔥 CORS (VERY IMPORTANT)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ------------------------
 # Test API
@@ -17,7 +27,11 @@ def home():
 # Cut Video API
 # ------------------------
 @app.post("/cut-video")
-async def cut_video(file: UploadFile = File(...), start: float = Form(0), end: float = Form(10)):
+async def cut_video(
+    file: UploadFile = File(...),
+    start: float = Form(0),
+    end: float = Form(10),
+):
     input_name = f"input_{uuid.uuid4()}.mp4"
     output_name = f"cut_{uuid.uuid4()}.mp4"
 
@@ -38,7 +52,10 @@ async def cut_video(file: UploadFile = File(...), start: float = Form(0), end: f
 # Add Text API
 # ------------------------
 @app.post("/add-text")
-async def add_text(file: UploadFile = File(...), text: str = Form("Hello World")):
+async def add_text(
+    file: UploadFile = File(...),
+    text: str = Form("Hello World"),
+):
     input_name = f"input_{uuid.uuid4()}.mp4"
     output_name = f"text_{uuid.uuid4()}.mp4"
 
@@ -46,8 +63,13 @@ async def add_text(file: UploadFile = File(...), text: str = Form("Hello World")
         f.write(await file.read())
 
     clip = VideoFileClip(input_name)
-    txt_clip = TextClip(text, fontsize=50, color='white', font='Arial')\
-               .set_position('center').set_duration(clip.duration)
+
+    txt_clip = (
+        TextClip(text, fontsize=50, color="white")
+        .with_position("center")
+        .with_duration(clip.duration)
+    )
+
     final_clip = CompositeVideoClip([clip, txt_clip])
     final_clip.write_videofile(output_name, fps=24)
 
